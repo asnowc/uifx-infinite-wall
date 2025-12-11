@@ -11,17 +11,15 @@ export default function App() {
 				width: "100vw",
 			}}
 		>
-			<div
+			<InfiniteWall
 				style={{
-					overflow: "hidden",
-					border: "1px solid red",
+					border: "4px dashed red",
 					height: 400,
 					width: 700,
 					margin: 100,
+					overflow: "visible",
 				}}
-			>
-				<InfiniteWall />
-			</div>
+			/>
 		</div>
 	);
 }

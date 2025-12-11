@@ -12,12 +12,15 @@
     "dev": "vite"
   },
   "license": "MIT",
-  "files": ["./dist"],
+  "files": [
+    "./dist"
+  ],
   "packageManager": "pnpm@10.12.1",
   "devDependencies": {
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "vite": "^7.2.7"
+    "vite": "^7.2.7",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "optionalDependencies": {
     "react": "^19.2.1",

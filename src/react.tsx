@@ -1,22 +1,22 @@
-import { InfiniteWallRender, type WallElement } from "./core/layout.ts";
-import React, { type ReactNode, useEffect, useMemo, useReducer, useRef } from "react";
-import { ListenMoveArea } from "./core/ListenMoveArea.ts";
+import { InfiniteWallRender, type BrickElement, ListenMoveArea, type InfiniteWallOptions } from "./mod.ts";
+import React, { type ReactNode, useEffect, useMemo, useReducer, useRef, type HTMLAttributes } from "react";
 import { createPortal } from "react-dom";
 
-export type InfiniteWallProps = InfiniteWallConfig & {
-	className?: string;
-	style?: React.CSSProperties;
-	renderItem?: (element: WallElement, wall: InfiniteWallRender) => ReactNode;
-	deps?: any[];
-};
+export type InfiniteWallProps = HTMLAttributes<HTMLDivElement> &
+	Pick<InfiniteWallConfig, "brickHeight" | "brickWidth" | "renderItem"> & {
+		renderItem?: (brick: BrickElement, wall: InfiniteWallRender) => ReactNode;
+		deps?: any[];
+	};
 export function InfiniteWall(props: InfiniteWallProps) {
-	const { className, style, deps = [], ...rest } = props;
+	const { className, style, deps = [], brickHeight, brickWidth, renderItem, ...rest } = props;
 
 	const ref = useRef<HTMLDivElement>(null);
 	/** 无限滚动 */
 	const { list, wallRef, updateList } = useInfiniteWall({
 		containerRef: ref,
-		...rest,
+		brickHeight,
+		brickWidth,
+		renderItem,
 	});
 	/** 鼠标拖拽 */
 	const area = useMemo((): ListenMoveArea & ScrollMeta => {
@@ -36,7 +36,7 @@ export function InfiniteWall(props: InfiniteWallProps) {
 	return (
 		<div
 			className={className}
-			style={{ width: "100%", height: "100%", overflow: "hidden", ...style }}
+			style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden", ...style }}
 			ref={ref}
 			onMouseDown={(e) => {
 				area.onTargetStart(e.clientX, e.clientY);
@@ -47,19 +47,14 @@ export function InfiniteWall(props: InfiniteWallProps) {
 			onMouseUp={(e) => {
 				area.onTargetEnd();
 			}}
+			{...rest}
 		>
 			{list}
 		</div>
 	);
 }
-export type InfiniteWallConfig = {
-	/** 元素的类名。暂不能动态更新 */
-	itemClassName?: string;
-	/** 方块高度 */
-	blockHeight?: number;
-	/** 方块宽度 */
-	blockWidth?: number;
-	renderItem?: (node: WallElement, wall: InfiniteWallRender) => ReactNode;
+export type InfiniteWallConfig = Pick<InfiniteWallOptions, "brickHeight" | "brickWidth"> & {
+	renderItem?: (node: BrickElement, wall: InfiniteWallRender) => ReactNode;
 	ref?: React.RefObject<InfiniteWallRender | null | undefined>;
 };
 type ScrollMeta = {
@@ -71,7 +66,7 @@ export function useInfiniteWall(
 		containerRef: React.RefObject<HTMLDivElement | null | undefined>;
 	}
 ) {
-	const { containerRef, blockWidth = 50, blockHeight = blockWidth, itemClassName = "" } = config;
+	const { containerRef, brickWidth: blockWidth = 50, brickHeight: blockHeight = blockWidth } = config;
 	const wallRef = useRef<InfiniteWallRender>(null);
 	const renderRef = useRef<InfiniteWallConfig>(config);
 	renderRef.current = config;
@@ -94,18 +89,10 @@ export function useInfiniteWall(
 		if (!dom) return;
 
 		const wall = new InfiniteWallRender(dom, {
-			blockHeight,
-			blockWidth,
-			onElementUpdate(elements) {
+			brickHeight: blockHeight,
+			brickWidth: blockWidth,
+			onBrickUpdate(elements) {
 				updateList();
-			},
-			createElement(elements) {
-				if (itemClassName) {
-					for (let i = 0; i < elements.length; i++) {
-						const element = elements[i];
-						element.className = itemClassName;
-					}
-				}
 			},
 		});
 		if (config.ref) config.ref.current = wall;
@@ -123,13 +110,13 @@ export function useInfiniteWall(
 	useMemo(() => {
 		if (!wallRef.current) return;
 		const wall = wallRef.current;
-		wall.blockHeight = blockHeight;
-		wall.blockWidth = blockWidth;
+		wall.brickHeight = blockHeight;
+		wall.brickWidth = blockWidth;
 	}, [blockHeight, blockWidth]);
 
 	return { list, wallRef, updateList };
 }
-function devRender(element: WallElement, wall: InfiniteWallRender) {
+function devRender(element: BrickElement, wall: InfiniteWallRender) {
 	return (
 		<div
 			style={{
@@ -137,12 +124,16 @@ function devRender(element: WallElement, wall: InfiniteWallRender) {
 				height: "100%",
 				width: "100%",
 				padding: 2,
+				fontSize: 10,
 				boxSizing: "border-box",
 			}}
 		>
-			{element.wallX}
-			<br />
-			<div style={{ textAlign: "right" }}>{element.wallY}</div>
+			<div style={{ color: "#a4a230", textAlign: "center" }}>{element.brickId}</div>
+			<div style={{ fontWeight: "bold" }}>
+				{element.brickX}
+				<br />
+				<div style={{ textAlign: "right" }}>{element.brickY}</div>
+			</div>
 		</div>
 	);
 }
