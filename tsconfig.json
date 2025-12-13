@@ -7,16 +7,18 @@
 		"declaration": true,
 		"paths": {
 			"@effect/infinite-wall": ["./src/mod.ts"],
-			"@effect/infinite-wall/react": ["./src/react.tsx"]
+			"@effect/infinite-wall/react": ["./src/react.ts"]
 		},
 		"outDir": "./dist",
 		"strict": true,
 		"jsx": "react-jsx",
 		"verbatimModuleSyntax": true,
+		"isolatedDeclarations": false,
 		"isolatedModules": true,
+		"noUncheckedSideEffectImports": true,
+
 		"allowImportingTsExtensions": true,
 		"rewriteRelativeImportExtensions": true,
-		"noUncheckedSideEffectImports": true,
 		"moduleDetection": "force",
 		"skipLibCheck": true
 	}

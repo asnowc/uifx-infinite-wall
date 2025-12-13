@@ -1,14 +1,24 @@
-export type InputData = {
+export type InputDataBase = {
+	containerWidth: number;
+	containerHeight: number;
+
 	/** 虚拟垂直滚动距离 */
 	scrollTop: number;
 	/** 虚拟水平滚动距离 */
 	scrollLeft: number;
+
 	/** 单个元素高度 */
 	brickHeight: number;
 	/** 单个元素宽度 */
 	brickWidth: number;
 };
-export type CalcData = {
+export type InputData = InputDataBase & {
+	/** 大于或等于1，预渲染X轴方向的砖块数量，超出可视区域的砖块数量 */
+	readonly preRenderX: number;
+	/** 大于或等于1，预渲染Y轴方向的砖块数量，超出可视区域的砖块数量 */
+	readonly preRenderY: number;
+};
+export type CalcData = InputDataBase & {
 	/** 容器内 x轴向真实的元素数量 */
 	xCount: number;
 	/** 容器内 y轴向真实的元素数量 */
@@ -23,6 +33,9 @@ export type CalcData = {
 	/** 真实的垂直偏移 */
 	realOffsetTop: number;
 
+	/** 是否需要更新元素宽高 */
+	changedWith: boolean;
+
 	screenX: number;
 	screenY: number;
 };
@@ -35,16 +48,25 @@ export type RenderLayout = InputData & CalcData;
  * @param containerWidth 容器宽度
  * @param containerHeight 容器高度
  */
-export function calcLayout(
-	input: Readonly<InputData>,
-	output: CalcData,
-	containerWidth: number,
-	containerHeight: number
-) {
-	const { brickHeight, brickWidth, scrollLeft, scrollTop } = input;
+export function calcLayout(input: Readonly<InputData>, output: CalcData) {
+	const { brickHeight, brickWidth, scrollLeft, scrollTop, containerHeight, containerWidth } = input;
+	if (!(brickHeight > 0)) {
+		throw new Error("brickHeight must be greater than 0");
+	}
+	if (!(brickWidth > 0)) {
+		throw new Error("brickWidth must be greater than 0");
+	}
 
-	const xCount = 1 + Math.ceil(containerWidth / brickWidth);
-	const yCount = 1 + Math.ceil(containerHeight / brickHeight);
+	output.changedWith = input.brickWidth !== output.brickWidth || input.brickHeight !== output.brickHeight;
+	output.brickHeight = brickHeight;
+	output.brickWidth = brickWidth;
+	output.containerHeight = containerHeight;
+	output.containerWidth = containerWidth;
+	output.scrollLeft = scrollLeft;
+	output.scrollTop = scrollTop;
+
+	const xCount = input.preRenderX + Math.ceil(containerWidth / brickWidth);
+	const yCount = input.preRenderY + Math.ceil(containerHeight / brickHeight);
 	const limitWidth = xCount * brickWidth;
 	const limitHeight = yCount * brickHeight;
 
@@ -58,45 +80,38 @@ export function calcLayout(
 	output.realOffsetTop = scrollTop % limitHeight;
 	output.screenX = scrollLeft < 0 ? Math.floor(-scrollLeft / limitWidth) : Math.ceil(-scrollLeft / limitWidth);
 	output.screenY = scrollTop < 0 ? Math.floor(-scrollTop / limitHeight) : Math.ceil(-scrollTop / limitHeight);
-	return input;
 }
 
-export function calcBrickPosition(
-	layout: RenderLayout,
-	overWidth: number,
-	overHeight: number,
-	idX: number,
-	idY: number
-) {
-	const { brickHeight: blockHeight, brickWidth: blockWidth } = layout;
-	let offsetLeft = idX * blockWidth + layout.realOffsetLeft;
-	let offsetTop = idY * blockHeight + layout.realOffsetTop;
+export function calcBrickPosition(calcData: CalcData, overWidth: number, overHeight: number, idX: number, idY: number) {
+	const { brickHeight, brickWidth } = calcData;
+	let offsetLeft = idX * brickWidth + calcData.realOffsetLeft;
+	let offsetTop = idY * brickHeight + calcData.realOffsetTop;
 
 	let screenX: number;
 	if (offsetLeft > overWidth) {
 		// 右边元素移到最左边
-		offsetLeft = offsetLeft - overWidth - blockWidth;
-		screenX = layout.screenX - 1;
-	} else if (offsetLeft < -blockWidth) {
+		offsetLeft = offsetLeft - overWidth - brickWidth;
+		screenX = calcData.screenX - 1;
+	} else if (offsetLeft < -brickWidth) {
 		// 左边元素移到最右边
-		offsetLeft = offsetLeft + overWidth + blockWidth;
-		screenX = layout.screenX + 1;
+		offsetLeft = offsetLeft + overWidth + brickWidth;
+		screenX = calcData.screenX + 1;
 	} else {
-		screenX = layout.screenX;
+		screenX = calcData.screenX;
 	}
-	const brickX: number = screenX * layout.xCount + idX;
+	const brickX: number = screenX * calcData.xCount + idX;
 
 	let screenY: number;
 	if (offsetTop > overHeight) {
-		offsetTop = offsetTop - overHeight - blockHeight;
-		screenY = layout.screenY - 1;
-	} else if (offsetTop < -blockHeight) {
-		offsetTop = offsetTop + overHeight + blockHeight;
-		screenY = layout.screenY + 1;
+		offsetTop = offsetTop - overHeight - brickHeight;
+		screenY = calcData.screenY - 1;
+	} else if (offsetTop < -brickHeight) {
+		offsetTop = offsetTop + overHeight + brickHeight;
+		screenY = calcData.screenY + 1;
 	} else {
-		screenY = layout.screenY;
+		screenY = calcData.screenY;
 	}
-	const brickY = screenY * layout.yCount + idY;
+	const brickY = screenY * calcData.yCount + idY;
 
 	return {
 		brickX,
