@@ -25,4 +25,4 @@ jobs:
       - name: Build
         run: pnpm run ci:build
       - name: Publish
-        run: pnpm publish
+        run: pnpm publish --no-git-checks
