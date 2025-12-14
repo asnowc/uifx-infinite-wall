@@ -1,7 +1,7 @@
 {
   "name": "@uifx/infinite-wall",
   "type": "module",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "A component library that enables two-dimensional infinite scrolling",
   "exports": {
     ".": "./dist/core.js",

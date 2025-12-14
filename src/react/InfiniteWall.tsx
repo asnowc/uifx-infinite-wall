@@ -6,6 +6,8 @@ import type { ApplyZoomResult, InfiniteWallRender } from "@uifx/infinite-wall";
 
 export type InfiniteWallProps = HTMLAttributes<HTMLDivElement> &
 	Pick<UseInfiniteWallOption, "brickHeight" | "brickWidth" | "renderItem"> & {
+		onMoveStart?: () => void;
+		onMoveEnd?: () => void;
 		onZoom?: (result: ApplyZoomResult) => void;
 		/**如果为 true, 则可以使用鼠标拖拽移动  默认 false. */
 		draggable?: boolean;
@@ -26,6 +28,8 @@ export function InfiniteWall(props: InfiniteWallProps): ReactNode {
 		zoomControl,
 		ref,
 		renderItem,
+		onMoveStart,
+		onMoveEnd,
 		onMouseDown,
 		onZoom,
 		...rest
@@ -65,10 +69,15 @@ export function InfiniteWall(props: InfiniteWallProps): ReactNode {
 
 	/** 鼠标拖拽 */
 	const area = useMemo((): ListenMoveArea & ScrollMeta => {
-		const area = new ListenMoveArea(function (dx, dy) {
-			wall.scrollTop = area.baseY + dy;
-			wall.scrollLeft = area.baseX + dx;
-		}) as ListenMoveArea & ScrollMeta;
+		const area = new ListenMoveArea(
+			function (dx, dy) {
+				wall.scrollTop = area.baseY + dy;
+				wall.scrollLeft = area.baseX + dx;
+			},
+			() => {
+				propsRef.current.onMoveEnd?.();
+			}
+		) as ListenMoveArea & ScrollMeta;
 		area.baseX = 0;
 		area.baseY = 0;
 		return area;
@@ -87,7 +96,8 @@ export function InfiniteWall(props: InfiniteWallProps): ReactNode {
 					? (e) => {
 							onMouseDown?.(e);
 							if (e.defaultPrevented) return;
-							area.onTargetStart(e.clientX, e.clientY);
+							onMoveStart?.();
+							area.startMove(e.clientX, e.clientY);
 							area.baseX = wall.scrollLeft;
 							area.baseY = wall.scrollTop;
 					  }

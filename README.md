@@ -14,7 +14,7 @@
 ### Usage
 
 ```tsx
-import { InfiniteWall } from "@uifx/infinite-wall";
+import { InfiniteWall } from "@uifx/infinite-wall/react";
 function Example() {
 	return (
 		<InfiniteWall
